@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Шифратор тексту</title>
+  <style>
+    :root {
+      --main-color: #4a90e2;
+      --bg-color: #f5f7fa;
+      --text-color: #333;
+      --button-hover: #2c6fa8;
+      --button-bg: #1e3d6f;
+      --border-radius: 10px;
+      --highlight-color: #8a2be2;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(270deg, #4a90e2, #6a11cb, #2575fc, #6dd5ed);
+      background-size: 800% 800%;
+      animation: gradientAnimation 15s ease infinite;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @keyframes gradientAnimation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .emoji {
+      position: absolute;
+      font-size: 50px;
+      animation: float 15s ease-in-out infinite;
+      opacity: 0.6;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(0) rotate(0deg);
+      }
+      25% {
+        transform: translateY(-50px) rotate(15deg);
+      }
+      50% {
+        transform: translateY(0) rotate(0deg);
+      }
+      75% {
+        transform: translateY(50px) rotate(-15deg);
+      }
+      100% {
+        transform: translateY(0) rotate(0deg);
+      }
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: white;
+      text-align: center;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+    }
+
+    textarea {
+      width: 100%;
+      max-width: 800px;
+      height: 120px;
+      padding: 10px;
+      border: 2px solid var(--main-color);
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      resize: vertical;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      background: rgba(255, 255, 255, 0.8);
+      transition: box-shadow 0.3s ease-in-out;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--highlight-color);
+      box-shadow: 0 0 10px var(--highlight-color);
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button, select {
+      padding: 10px 20px;
+      background-color: var(--button-bg);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    button:hover, select:hover {
+      background-color: var(--button-hover);
+      transform: scale(1.05);
+    }
+
+    .result {
+      width: 100%;
+      max-width: 800px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      min-height: 120px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      transition: all 0.3s ease;
+    }
+
+  </style>
+</head>
+<body>
+
+  <h1 id="title">🔐 Український шифратор тексту</h1>
+
+  <select id="languageSelect" onchange="changeLanguage()">
+    <option value="ua">Українська</option>
+    <option value="en">English</option>
+  </select>
+
+  <textarea id="inputText" placeholder="Введіть текст для шифрування або розшифрування..."></textarea>
+
+  <div class="buttons">
+    <button id="encryptBtn" onclick="encrypt()">Зашифрувати</button>
+    <button id="decryptBtn" onclick="decrypt()">Розшифрувати</button>
+    <button id="copyBtn" onclick="copyResult()">Копіювати результат</button>
+    <button id="resetBtn" onclick="resetAll()">Скинути все</button>
+    <button id="downloadBtn" onclick="downloadText()">Завантажити результат</button>
+  </div>
+
+  <div class="result" id="result"></div>
+
+  <div class="emoji" style="top: 5%; left: 10%;">😊</div>
+  <div class="emoji" style="top: 20%; right: 10%;">😄</div>
+  <div class="emoji" style="top: 40%; left: 25%;">🎉</div>
+  <div class="emoji" style="top: 60%; right: 15%;">🤩</div>
+  <div class="emoji" style="top: 80%; left: 5%;">😎</div>
+
+  <script>
+    const uaAlphabet = {
+      "а": "00000001", "б": "00000010", "в": "00000011", "г": "00000100", "ґ": "00000101",
+      "д": "00000110", "е": "00000111", "є": "00001000", "ж": "00001001", "з": "00001010",
+      "и": "00001011", "і": "00001100", "ї": "00001101", "й": "00001110", "к": "00001111",
+      "л": "00010000", "м": "00010001", "н": "00010010", "о": "00010011", "п": "00010100",
+      "р": "00010101", "с": "00010110", "т": "00010111", "у": "00011000", "ф": "00011001",
+      "х": "00011010", "ц": "00011011", "ч": "00011100", "ш": "00011101", "щ": "00011110",
+      "ь": "00011111", "ю": "00100000", "я": "00100001",
+      "А": "00100010", "Б": "00100011", "В": "00100100", "Г": "00100101", "Ґ": "00100110",
+      "Д": "00100111", "Е": "00101000", "Є": "00101001", "Ж": "00101010", "З": "00101011",
+      "И": "00101100", "І": "00101101", "Ї": "00101110", "Й": "00101111", "К": "00110000",
+      "Л": "00110001", "М": "00110010", "Н": "00110011", "О": "00110100", "П": "00110101",
+      "Р": "00110110", "С": "00110111", "Т": "00111000", "У": "00111001", "Ф": "00111010",
+      "Х": "00111011", "Ц": "00111100", "Ч": "00111101", "Ш": "00111110", "Щ": "00111111",
+      "Ь": "01000000", "Ю": "01000001", "Я": "01000010",
+      " ": "01000011", ".": "01000100", ",": "01000101", "!": "01000110", "?": "01000111",
+      ":": "01001000", ";": "01001001", "-": "01001010", "(": "01001011", ")": "01001100",
+      "'": "01010001", '"': "01010010", '*': "01010111"
+    };
+
+    const enAlphabet = {
+      "a": "00000в001", "b": "00000010", "c": "00000011", "d": "00000100", "e": "00000101",
+      "f": "00000110", "g": "00000111", "h": "00001000", "i": "00001001", "j": "00001010",
+      "k": "00001011", "l": "00001100", "m": "00001101", "n": "00001110", "o": "00001111",
+      "p": "00010000", "q": "00010001", "r": "00010010", "s": "00010011", "t": "00010100",
+      "u": "00010101", "v": "00010110", "w": "00010111", "x": "00011000", "y": "00011001",
+      "z": "00011010",
+      "A": "00011011", "B": "00011100", "C": "00011101", "D": "00011110", "E": "00011111",
+      "F": "00100000", "G": "00100001", "H": "00100010", "I": "00100011", "J": "00100100",
+      "K": "00100101", "L": "00100110", "M": "00100111", "N": "00101000", "O": "00101001",
+      "P": "00101010", "Q": "00101011", "R": "00101100", "S": "00101101", "T": "00101110",
+      "U": "00101111", "V": "00110000", "W": "00110001", "X": "00110010", "Y": "00110011",
+      "Z": "00110100",
+      " ": "00110101", ".": "00110110", ",": "00110111", "!": "00111000", "?": "00111001",
+      ":": "00111010", ";": "00111011", "-": "00111100", "(": "00111101", ")": "00111110",
+      "'": "00111111", '"': "01000000", '*': "01010111"
+    };
+
+    let currentLanguage = 'ua';
+
+    function getAlphabet() {
+      return currentLanguage === 'ua' ? uaAlphabet : enAlphabet;
+    }
+
+    function encrypt() {
+      const alphabet = getAlphabet();
+      const input = document.getElementById('inputText').value;
+      let output = "";
+      for (const char of input) {
+        if (alphabet[char]) {
+          output += alphabet[char] + " ";
+        } else {
+          output += "???????? ";
+        }
+      }
+      document.getElementById('result').innerText = output.trim();
+    }
+
+    function decrypt() {
+      const alphabet = getAlphabet();
+      const reverseAlphabet = Object.fromEntries(Object.entries(alphabet).map(([k, v]) => [v, k]));
+      const input = document.getElementById('inputText').value.trim();
+      let output = "";
+      const codes = input.split(/\s+/);
+      for (const code of codes) {
+        if (reverseAlphabet[code]) {
+          output += reverseAlphabet[code];
+        } else {
+          output += "?";
+        }
+      }
+      document.getElementById('result').innerText = output;
+    }
+
+    function copyResult() {
+      const resultText = document.getElementById('result').innerText;
+      if (!resultText) {
+        alert(currentLanguage === 'ua' ? "Немає тексту для копіювання!" : "Nothing to copy!");
+        return;
+      }
+      navigator.clipboard.writeText(resultText)
+        .then(() => alert(currentLanguage === 'ua' ? "Результат скопійовано!" : "Result copied!"))
+        .catch(() => alert(currentLanguage === 'ua' ? "Помилка копіювання!" : "Copy error!"));
+    }
+
+    function resetAll() {
+      document.getElementById('inputText').value = "";
+      document.getElementById('result').innerText = "";
+    }
+
+    function downloadText() {
+      const resultText = document.getElementById('result').innerText;
+      if (!resultText) {
+        alert(currentLanguage === 'ua' ? "Немає результату для завантаження!" : "No result to download!");
+        return;
+      }
+
+      const blob = new Blob([resultText], { type: 'text/plain;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = "result.txt";
+      link.click();
+    }
+
+    function changeLanguage() {
+      const lang = document.getElementById('languageSelect').value;
+      currentLanguage = lang;
+      if (lang === 'ua') {
+        document.getElementById('title').innerText = '🔐 Український шифратор тексту';
+        document.getElementById('inputText').placeholder = "Введіть текст для шифрування або розшифрування...";
+        document.getElementById('encryptBtn').innerText = "Зашифрувати";
+        document.getElementById('decryptBtn').innerText = "Розшифрувати";
+        document.getElementById('copyBtn').innerText = "Копіювати результат";
+        document.getElementById('resetBtn').innerText = "Скинути все";
+        document.getElementById('downloadBtn').innerText = "Завантажити результат";
+      } else {
+        document.getElementById('title').innerText = '🔐 English Text Encoder';
+        document.getElementById('inputText').placeholder = "Enter text to encrypt or decrypt...";
+        document.getElementById('encryptBtn').innerText = "Encrypt";
+        document.getElementById('decryptBtn').innerText = "Decrypt";
+        document.getElementById('copyBtn').innerText = "Copy Result";
+        document.getElementById('resetBtn').innerText = "Reset All";
+        document.getElementById('downloadBtn').innerText = "Download Result";
+      }
+    }
+  </script>
+
+</body>
+</html>
